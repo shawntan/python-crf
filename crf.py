@@ -62,6 +62,7 @@ class CRF:
 		beta = log_dot_mv(M[0],beta)
 		return (betas,beta)
 
+
 	def neg_likelihood_and_deriv(self,x_vec,y_vec,theta,debug=False):
 		length = len(x_vec)
 		"""
@@ -100,12 +101,16 @@ class CRF:
 		exp_features = np.sum( np.exp(log_probs) * all_features, axis= (0,1,2) )
 		emp_features = np.sum( all_features[range(length+1),yp_vec_ids,y_vec_ids], axis = 0 )
 		if debug:
-			print "ExpFeatures:",exp_features
-			print "EmpFeatures:",emp_features
+			print "EmpFeatures:"
+			print emp_features
+			print "ExpFeatures:"
+			print exp_features
+
 		return (
-				- (np.sum(log_M[range(length+1),yp_vec_ids,y_vec_ids]) - log_Z - self.regulariser(theta)), 
-				- (emp_features - exp_features - self.regulariser_deriv(theta))
-			)
+			- (np.sum(log_M[range(length+1),yp_vec_ids,y_vec_ids]) - log_Z - self.regulariser(theta)), 
+			- (emp_features - exp_features - self.regulariser_deriv(theta))
+		)
+	def predict(self,x_vec)
 
 if __name__ == "__main__":
 	labels = ['A','B','C']
@@ -126,6 +131,6 @@ if __name__ == "__main__":
 
 	l = lambda theta: crf.neg_likelihood_and_deriv(x_vec,y_vec,theta)
 	#crf.theta = optimize.fmin_bfgs(l, crf.theta, maxiter=100)
-	crf.theta = optimize.fmin_l_bfgs_b(l, crf.theta)
-	print crf.theta
-	print crf.neg_likelihood_and_deriv(x_vec,y_vec,crf.theta[0],debug=True)
+	theta,_,_ = optimize.fmin_l_bfgs_b(l, crf.theta)
+	crf.theta = theta
+	print crf.neg_likelihood_and_deriv(x_vec,y_vec,crf.theta,debug=True)
