@@ -17,12 +17,11 @@ def log_dot_mv(logM,logb):
 	return misc.logsumexp(logM+logb.reshape((1,)+logb.shape),axis=1)
 
 class CRF:
-	def __init__(self,feature_functions,labels,sigma=2):
+	def __init__(self,feature_functions,labels,sigma=2048):
 		self.ft_fun = feature_functions
 		self.theta  = np.zeros(len(self.ft_fun))
 		self.labels = [START] + labels + [ END ]
 		self.label_id  = { l:i for i,l in enumerate(self.labels) }
-
 		v = sigma ** 2
 		v2 = v * 2
 		self.regulariser = lambda w: np.sum(w ** 2) / v2
@@ -64,7 +63,6 @@ class CRF:
 
 
 	def neg_likelihood_and_deriv(self,x_vec,y_vec,theta,debug=False):
-		length = len(x_vec)
 		"""
 		all_features:	len(x_vec) + 1 x Y x Y x K
 		M:				len(x_vec) + 1 x Y x Y
@@ -73,6 +71,7 @@ class CRF:
 		log_probs:		len(x_vec) + 1 x Y x Y  (Y is the size of the state space)
 		`unnormalised` value here is alpha * M * beta, an unnormalised probability
 		"""
+		length = len(x_vec)
 		y_vec           = [START] + y_vec + [END]
 		yp_vec_ids      = [ self.label_id[yp] for yp in y_vec[:-1] ]
 		y_vec_ids       = [ self.label_id[y]  for y  in y_vec[1:]  ]
@@ -107,10 +106,63 @@ class CRF:
 			print exp_features
 
 		return (
-			- (np.sum(log_M[range(length+1),yp_vec_ids,y_vec_ids]) - log_Z - self.regulariser(theta)), 
-			- (emp_features - exp_features - self.regulariser_deriv(theta))
-		)
-	def predict(self,x_vec)
+			- (np.sum(log_M[range(length+1),yp_vec_ids,y_vec_ids]) 
+				- log_Z - self.regulariser(theta)), 
+			- (emp_features - exp_features 
+				- self.regulariser_deriv(theta))
+			)
+	def fun(self,i,yp,y,k):
+		#print (i,yp,y,k)
+		fun = self.ft_fun[k]
+		return fun(self.labels[yp],self.labels[y],x_vec,i)
+	def predict(self,x_vec):
+		# small overhead, no copying is done
+		"""
+		all_features:	len(x_vec+1) x Y' x Y x K
+		log_potential:	len(x_vec+1) x Y' x Y
+		argmaxes:		len(x_vec+1) x Y'
+		"""
+		all_features  = self.all_features(x_vec)
+		log_potential = np.dot(all_features,self.theta)
+		print
+		print
+		print "Log Potentials:"
+		print log_potential
+		print
+		print
+		prev_state    = log_potential[0,self.label_id[START]]
+		prev_state_v  = prev_state.reshape((len(self.labels),1))
+		argmaxes      = np.zeros((len(x_vec),len(self.labels)),dtype=np.int)
+		print "T=0"
+		print prev_state
+		print
+		for i in range(1,len(x_vec)):
+			curr_state  = prev_state_v + log_potential[i]
+			argmaxes[i] = np.nanargmax(curr_state,axis=0)
+			prev_state[:]  = curr_state[argmaxes[i],range(len(self.labels))]
+			print
+			print "T=%d"%i
+			print curr_state
+			print prev_state
+			print argmaxes[i]
+			print
+		curr_state = prev_state + log_potential[-1,self.label_id[END]]
+		prev_label = np.argmax(curr_state)
+		print prev_label
+		result = []
+		for i in reversed(range(len(x_vec))):
+			print result
+			result.append(self.labels[prev_label])
+			prev_label = argmaxes[i,prev_label]
+		result.reverse()
+		return result
+
+	def _predict(self,x_vec):
+		all_features = self.all_features(x_vec)
+		
+
+
+
 
 if __name__ == "__main__":
 	labels = ['A','B','C']
@@ -134,3 +186,7 @@ if __name__ == "__main__":
 	theta,_,_ = optimize.fmin_l_bfgs_b(l, crf.theta)
 	crf.theta = theta
 	print crf.neg_likelihood_and_deriv(x_vec,y_vec,crf.theta,debug=True)
+	print
+	print
+	print x_vec
+	print crf.predict(x_vec)
