@@ -31,13 +31,13 @@ if __name__ == "__main__":
 	crf = CRF( labels = labels,
 			   feature_functions = transition_functions + observation_functions )
 
-	vectorised_x_vecs = crf.create_vector_list(word_data)
-	l = lambda theta: crf.neg_likelihood_and_deriv(vectorised_x_vecs,label_data,theta)
+	vectorised_x_vecs,vectorised_y_vecs = crf.create_vector_list(word_data,label_data)
+	l = lambda theta: crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
 	#crf.theta = optimize.fmin_bfgs(l, crf.theta, maxiter=100)
 	print "Minimizing..."
 	theta,_,_ = optimize.fmin_l_bfgs_b(l, crf.theta)
 	crf.theta = theta
-	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,label_data,crf.theta)
+	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,crf.theta)
 	print
 	print
 	x_vec = word_data[-1]

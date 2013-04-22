@@ -60,12 +60,22 @@ class CRF:
 			beta = betas[i] = log_dot_mv(M[i+1],beta)
 		beta = log_dot_mv(M[0],beta)
 		return (betas,beta)
-	def create_vector_list(self,x_vecs):
-		return [ self.all_features(x_vec) for x_vec in x_vecs ]
-	def neg_likelihood_and_deriv(self,x_vec_list,y_vecs,theta,debug=False):
+
+	def create_vector_list(self,x_vecs,y_vecs):
+		observations = [ self.all_features(x_vec) for x_vec in x_vecs ]
+		labels = len(y_vecs)*[None]
+	
+		for i in range(len(y_vecs)):
+			y_vecs[i].insert(0,START)
+			y_vecs[i].append(END)
+			labels[i] = np.array([ self.label_id[y] for y in y_vecs[i] ],copy=False,dtype=np.int)
+		
+		return (observations,labels)
+
+	def neg_likelihood_and_deriv(self,x_vec_list,y_vec_list,theta,debug=False):
 		likelihood = 0
 		derivative = np.zeros(len(self.theta))
-		for x_vec,y_vec in zip(x_vec_list,y_vecs):
+		for x_vec,y_vec in zip(x_vec_list,y_vec_list):
 			"""
 			all_features:	len(x_vec) + 1 x Y x Y x K
 			M:				len(x_vec) + 1 x Y x Y
@@ -76,9 +86,9 @@ class CRF:
 			"""
 			all_features    = x_vec
 			length 			= x_vec.shape[0]
-			y_vec           = [START] + y_vec + [END]
-			yp_vec_ids      = [ self.label_id[yp] for yp in y_vec[:-1] ]
-			y_vec_ids       = [ self.label_id[y]  for y  in y_vec[1:]  ]
+			#y_vec           = [START] + y_vec + [END]
+			yp_vec_ids      = y_vec[:-1]
+			y_vec_ids       = y_vec[1:]
 			log_M           = np.dot(all_features,theta)
 			log_alphas,last = self.forward(log_M)
 			log_betas, zero = self.backward(log_M)
@@ -164,10 +174,6 @@ class CRF:
 	def _predict(self,x_vec):
 		all_features = self.all_features(x_vec)
 		
-
-
-
-
 if __name__ == "__main__":
 	labels = ['A','B','C']
 	obsrvs = ['a','b','c','d','e','f']
@@ -185,13 +191,12 @@ if __name__ == "__main__":
 	x_vec = ["a","b","c","d","e","f"]
 	y_vec = ["A","B","C","A","B","C"]
 
-	vectorised_x_vecs = crf.create_vector_list([x_vec])
-	l = lambda theta: crf.neg_likelihood_and_deriv(vectorised_x_vecs,[y_vec],theta)
+	vectorised_x_vecs,vectorised_y_vecs = crf.create_vector_list([x_vec],[y_vec])
+	l = lambda theta: crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
 	#crf.theta = optimize.fmin_bfgs(l, crf.theta, maxiter=100)
 	theta,_,_ = optimize.fmin_l_bfgs_b(l, crf.theta)
 	crf.theta = theta
-	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,[y_vec],crf.theta)
+	print "Minimized...."
+	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,crf.theta)
 	print
-	print
-	print x_vec
 	print crf.predict(x_vec)
