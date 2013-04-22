@@ -1,0 +1,4 @@
+This/DT temblor-prone/JJ city/NN dispatched/VBD inspectors/NNS ,/, firefighters/NNS and/CC other/JJ earthquake-trained/JJ personnel/NNS to/TO aid/VB San/NNP Francisco/NNP ./.
+ He/PRP reckons/VBZ the/DT current/JJ account/NN deficit/NN will/MD narrow/VB to/TO only/RB #/# 1.8/CD billion/CD in/IN September/NNP ./.
+ Meanwhile/RB ,/, overall/JJ evidence/NN on/IN the/DT economy/NN remains/VBZ fairly/RB clouded/VBN ./.
+ But/CC consumer/NN expenditure/NN data/NNS released/VBD Friday/NNP do/VBP n't/RB suggest/VB that/IN the/DT U.K./NNP economy/NN is/VBZ slowing/VBG that/DT quickly/RB ./.
