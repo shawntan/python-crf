@@ -53,7 +53,8 @@ class CRF:
 		return (alphas,alpha)
 
 	def backward(self,M,end=-1):
-		betas = np.NINF*np.ones((M.shape[0],M.shape[1]))
+		#betas = np.NINF*np.ones((M.shape[0],M.shape[1]))
+		betas = np.zeros((M.shape[0],M.shape[1]))
 		beta  = betas[-1]
 		beta[end] = 0
 		for i in reversed(range(M.shape[0]-1)):
