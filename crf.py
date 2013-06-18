@@ -43,19 +43,19 @@ class CRF:
 						result[i,j,k,l] = f(yp,y,x_vec,i)
 		return result
 
-	def forward(self,M):
+	def forward(self,M,start=0):
 		alphas = np.NINF*np.ones((M.shape[0],M.shape[1]))
 		alpha  = alphas[0]
-		alpha[self.label_id[START]] = 0
+		alpha[start] = 0
 		for i in range(M.shape[0]-1):
 			alpha = alphas[i+1] = log_dot_vm(alpha,M[i])
 		alpha = log_dot_vm(alpha,M[-1])
 		return (alphas,alpha)
 
-	def backward(self,M):
+	def backward(self,M,end=-1):
 		betas = np.NINF*np.ones((M.shape[0],M.shape[1]))
 		beta  = betas[-1]
-		beta[self.label_id[END]] = 0
+		beta[end] = 0
 		for i in reversed(range(M.shape[0]-1)):
 			beta = betas[i] = log_dot_mv(M[i+1],beta)
 		beta = log_dot_mv(M[0],beta)
@@ -90,8 +90,8 @@ class CRF:
 			yp_vec_ids      = y_vec[:-1]
 			y_vec_ids       = y_vec[1:]
 			log_M           = np.dot(all_features,theta)
-			log_alphas,last = self.forward(log_M)
-			log_betas, zero = self.backward(log_M)
+			log_alphas,last = self.forward(log_M,self.label_id[START])
+			log_betas, zero = self.backward(log_M,self.label_id[END])
 			time,state      = log_alphas.shape
 			"""
 			Reshaping allows me to do the entire computation of the unormalised
