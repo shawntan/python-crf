@@ -19,7 +19,7 @@ def log_dot_mv(logM,logb):
 class CRF:
 	def __init__(self,feature_functions,labels,sigma=2048):
 		self.ft_fun = feature_functions
-		self.theta  = np.zeros(len(self.ft_fun))
+		self.theta  = np.random.randn(len(self.ft_fun))
 		self.labels = [START] + labels + [ END ]
 		self.label_id  = { l:i for i,l in enumerate(self.labels) }
 		v = sigma ** 2
@@ -120,7 +120,7 @@ class CRF:
 				print emp_features
 				print "ExpFeatures:"
 				print exp_features
-
+		
 		return (
 			- ( likelihood - self.regulariser(theta)), 
 			- ( derivative - self.regulariser_deriv(theta))
@@ -129,7 +129,7 @@ class CRF:
 		#print (i,yp,y,k)
 		fun = self.ft_fun[k]
 		return fun(self.labels[yp],self.labels[y],x_vec,i)
-	def predict(self,x_vec):
+	def predict(self,x_vec, debug=False):
 		# small overhead, no copying is done
 		"""
 		all_features:	len(x_vec+1) x Y' x Y x K
@@ -138,34 +138,37 @@ class CRF:
 		"""
 		all_features  = self.all_features(x_vec)
 		log_potential = np.dot(all_features,self.theta)
-		print
-		print
-		print "Log Potentials:"
-		print log_potential
-		print
-		print
+		if debug:
+			print
+			print
+			print "Log Potentials:"
+			print log_potential
+			print
+			print
 		prev_state    = log_potential[0,self.label_id[START]]
 		prev_state_v  = prev_state.reshape((len(self.labels),1))
 		argmaxes      = np.zeros((len(x_vec),len(self.labels)),dtype=np.int)
-		print "T=0"
-		print prev_state
-		print
+		if debug:
+			print "T=0"
+			print prev_state
+			print
 		for i in range(1,len(x_vec)):
 			curr_state  = prev_state_v + log_potential[i]
 			argmaxes[i] = np.nanargmax(curr_state,axis=0)
 			prev_state[:]  = curr_state[argmaxes[i],range(len(self.labels))]
-			print
-			print "T=%d"%i
-			print curr_state
-			print prev_state
-			print argmaxes[i]
-			print
+			if debug:
+				print
+				print "T=%d"%i
+				print curr_state
+				print prev_state
+				print argmaxes[i]
+				print
 		curr_state = prev_state + log_potential[-1,self.label_id[END]]
 		prev_label = np.argmax(curr_state)
-		print prev_label
+		if debug: print prev_label
 		result = []
 		for i in reversed(range(len(x_vec))):
-			print result
+			if debug:print result
 			result.append(self.labels[prev_label])
 			prev_label = argmaxes[i,prev_label]
 		result.reverse()
