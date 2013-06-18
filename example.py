@@ -23,8 +23,7 @@ if __name__ == "__main__":
 	lbls   = [START] + labels +  [END]
 	transition_functions = [
 			lambda yp,y,x_v,i,_yp=_yp,_y=_y: 1 if yp==_yp and y==_y else 0
-				for _yp in lbls[:-1]
-				for _y  in lbls[1:]]
+				for _yp in lbls[:-1] for _y  in lbls[1:]]
 	def set_membership(tag):
 		def fun(yp,y,x_v,i):
 			if i < len(x_v) and x_v[i].lower() in word_sets[tag]:
@@ -52,12 +51,13 @@ if __name__ == "__main__":
 		print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
 
 	#val = optimize.fmin_l_bfgs_b(l, crf.theta)
+	#print val
+	#theta,_,_  = val
+	theta = crf.theta
 	for _ in range(10000):
-		value, gradient = l(crf.theta)
+		value, gradient = l(theta)
 		print value
-		crf.theta = crf.theta - 0.1*gradient
-	print val
-	theta,_,_  = val
+		theta = theta - 0.1*gradient
 	crf.theta = theta
 	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,crf.theta)
 	print

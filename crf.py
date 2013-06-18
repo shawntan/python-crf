@@ -98,12 +98,12 @@ class CRF:
 			probabilities in one step, which means its faster, because it's done
 			in numpy
 			"""
-			log_alphas1 = log_alphas.reshape(time,state,1) 
+			log_alphas1 = log_alphas.reshape(time,state,1)
 			log_betas1  = log_betas.reshape(time,1,state)
 			log_Z       = misc.logsumexp(last)
 			log_probs   = log_alphas1 + log_M + log_betas1 - log_Z
 			log_probs   = log_probs.reshape(log_probs.shape+(1,))
-			#print log_Z
+
 			"""
 			Find the expected value of f_k over all transitions
 					 and emperical values
@@ -197,8 +197,14 @@ if __name__ == "__main__":
 	vectorised_x_vecs,vectorised_y_vecs = crf.create_vector_list([x_vec],[y_vec])
 	l = lambda theta: crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
 	#crf.theta = optimize.fmin_bfgs(l, crf.theta, maxiter=100)
-	theta,_,_ = optimize.fmin_l_bfgs_b(l, crf.theta)
+	#theta,_,_ = optimize.fmin_l_bfgs_b(l, crf.theta)
+	theta = crf.theta
+	for _ in range(10000):
+		value, gradient = l(theta)
+		print value
+		theta = theta - 0.01*gradient
 	crf.theta = theta
+	print theta
 	print "Minimized...."
 	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,crf.theta)
 	print
