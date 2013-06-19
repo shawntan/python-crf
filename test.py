@@ -108,7 +108,7 @@ class TestCRF(unittest.TestCase):
 	def setUp(self):
 		self.matrix = 0.001 + np.random.poisson(lam=1.5, size=(3,3)).astype(np.float)
 		self.vector = 0.001 + np.random.poisson(lam=1.5, size=(3,)).astype(np.float)
-		self.M = 0.001 + np.random.poisson(lam=1.5, size=(3,3,3)).astype(np.float)
+		self.M = 0.001 + np.random.poisson(lam=1.5, size=(10,3,3)).astype(np.float)
 		self.crf = crf.CRF([],[])
 
 	def test_log_dot_mv(self):
@@ -138,9 +138,14 @@ class TestCRF(unittest.TestCase):
 		self.assertTrue((res == res_true).all())
 
 	def test_predict(self):
-		print self.log_predict(self.M,self.M.shape[0],self.M.shape[1])
-		print argmax(self.M)
+		label_pred = self.crf.log_predict(self.M,self.M.shape[0],self.M.shape[1])
+		label_act  = argmax(self.M)
+		print label_pred
+		print label_act
+		self.assertTrue(label_pred == label_act)
+
 
 if __name__ == '__main__':
-	unittest.main()
+	for i in range(10):
+		unittest.main()
 

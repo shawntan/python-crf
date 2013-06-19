@@ -138,11 +138,38 @@ class CRF:
 		"""
 		all_features  = self.all_features(x_vec)
 		log_potential = np.dot(all_features,self.theta)
-		N = len(x_vec)
-		return self.log_predict(log_potential,N,K)
+		return [ self.labels[i] for i in self._predict(log_potential,len(x_vec),len(self.labels)) ]
+	
+	def _predict(self,log_potential,N,K,debug=False):
+		"""
+		Find the most likely assignment to labels given parameters using the
+		Viterbi algorithm.
+		"""
+		g0 = log_potential[0,0]
+		g  = log_potential[1:]
+
+		B = np.ones((N,K), dtype=np.int32) * -1
+		# compute max-marginals and backtrace matrix
+		V = g0
+		for t in xrange(1,N):
+			U = np.empty(K)
+			for y in xrange(K):
+				w = V + g[t-1,:,y]
+				B[t,y] = b = w.argmax()
+				U[y] = w[b]
+			V = U
+		# extract the best path by brack-tracking
+		y = V.argmax()
+		trace = []
+		for t in reversed(xrange(N)):
+			trace.append(y)
+			y = B[t, y]
+		trace.reverse()
+		return trace
 
 
-	def log_predict(self,log_potential,N,K):
+
+	def log_predict(self,log_potential,N,K,debug=False):
 		if debug:
 			print
 			print
