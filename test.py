@@ -4,7 +4,33 @@ import crf
 from scipy import misc
 from collections import defaultdict
 from numpy import empty, zeros, ones, log, exp, sqrt, add, int32, abs
+def argmax(X):
+	"""
+	Find the most likely assignment to labels given parameters using the
+	Viterbi algorithm.
+	"""
+	N,K,_ = X.shape
+	g0 = X[0,0]
+	g  = X[1:]
 
+	B = ones((N,K), dtype=int32) * -1
+	# compute max-marginals and backtrace matrix
+	V = g0
+	for t in xrange(1,N):
+		U = empty(K)
+		for y in xrange(K):
+			w = V + g[t-1,:,y]
+			B[t,y] = b = w.argmax()
+			U[y] = w[b]
+		V = U
+	# extract the best path by brack-tracking
+	y = V.argmax()
+	trace = []
+	for t in reversed(xrange(N)):
+		trace.append(y)
+		y = B[t, y]
+	trace.reverse()
+	return trace
 
 def forward(g0, g, N, K):
 	"""
@@ -78,7 +104,7 @@ def expectation(N,K,log_M):
 
 
 class TestCRF(unittest.TestCase):
-	
+
 	def setUp(self):
 		self.matrix = 0.001 + np.random.poisson(lam=1.5, size=(3,3)).astype(np.float)
 		self.vector = 0.001 + np.random.poisson(lam=1.5, size=(3,)).astype(np.float)
@@ -87,45 +113,34 @@ class TestCRF(unittest.TestCase):
 
 	def test_log_dot_mv(self):
 		self.assertTrue(
-			(np.around(np.exp(
-				crf.log_dot_mv(
-					np.log(self.matrix),
-					np.log(self.vector)
-					)
-				),10) == np.around(np.dot(self.matrix,self.vector),10)).all()
-			)
+				(np.around(np.exp(
+					crf.log_dot_mv(
+						np.log(self.matrix),
+						np.log(self.vector)
+						)
+					),10) == np.around(np.dot(self.matrix,self.vector),10)).all()
+		)
 
 	def test_log_dot_vm(self):
 		self.assertTrue(
-			(np.around(np.exp(
-				crf.log_dot_vm(
-					np.log(self.vector),
-					np.log(self.matrix)
-					)
-				),10) == np.around(np.dot(self.vector,self.matrix),10)).all()
-			)
+				(np.around(np.exp(
+					crf.log_dot_vm(
+						np.log(self.vector),
+						np.log(self.matrix)
+						)
+					),10) == np.around(np.dot(self.vector,self.matrix),10)).all()
+		)
 
 	def test_forward(self):
 		M = self.M/self.M.sum(axis=2).reshape(self.M.shape[:-1]+(1,))
 		res = np.around(np.exp(self.crf.forward(np.log(M))[0]).sum(axis=1),10)
 		res_true = np.around(np.ones(M.shape[0]),10)
 		self.assertTrue((res == res_true).all())
-	
-	def test_backward(self):
-		M = self.M/self.M.sum(axis=1).reshape((3,1,3))
-		res = np.around(np.exp(self.crf.backward(np.log(M))[0]).sum(axis=1),10)
-		res_true = np.around(np.ones(M.shape[0]),10)
-		self.assertTrue((res == res_true).all())
-	
-	"""	
-	def test_expectation(self):
-		print self.crf.forward(self.M)[0]
-		print self.crf.backward(self.M)[0]
-		print expectation(3,3,self.M)
-	"""
 
+	def test_predict(self):
+		print self.log_predict(self.M,self.M.shape[0],self.M.shape[1])
+		print argmax(self.M)
 
-		
 if __name__ == '__main__':
 	unittest.main()
 

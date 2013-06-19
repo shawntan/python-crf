@@ -17,7 +17,7 @@ def log_dot_mv(logM,logb):
 	return misc.logsumexp(logM+logb.reshape((1,)+logb.shape),axis=1)
 
 class CRF:
-	def __init__(self,feature_functions,labels,sigma=2048):
+	def __init__(self,feature_functions,labels,sigma=100):
 		self.ft_fun = feature_functions
 		self.theta  = np.random.randn(len(self.ft_fun))
 		self.labels = [START] + labels + [ END ]
@@ -104,13 +104,11 @@ class CRF:
 			log_Z       = misc.logsumexp(last)
 			log_probs   = log_alphas1 + log_M + log_betas1 - log_Z
 			log_probs   = log_probs.reshape(log_probs.shape+(1,))
-
 			"""
 			Find the expected value of f_k over all transitions
 					 and emperical values
 			(numpy makes it so easy, only if you do it right)
 			"""
-
 			exp_features = np.sum( np.exp(log_probs) * all_features, axis= (0,1,2) )
 			emp_features = np.sum( all_features[range(length),yp_vec_ids,y_vec_ids], axis = 0 )
 
@@ -130,6 +128,7 @@ class CRF:
 		#print (i,yp,y,k)
 		fun = self.ft_fun[k]
 		return fun(self.labels[yp],self.labels[y],x_vec,i)
+	
 	def predict(self,x_vec, debug=False):
 		# small overhead, no copying is done
 		"""
@@ -139,6 +138,11 @@ class CRF:
 		"""
 		all_features  = self.all_features(x_vec)
 		log_potential = np.dot(all_features,self.theta)
+		N = len(x_vec)
+		return self.log_predict(log_potential,N,K)
+
+
+	def log_predict(self,log_potential,N,K):
 		if debug:
 			print
 			print
@@ -147,16 +151,16 @@ class CRF:
 			print
 			print
 		prev_state    = log_potential[0,self.label_id[START]]
-		prev_state_v  = prev_state.reshape((len(self.labels),1))
-		argmaxes      = np.zeros((len(x_vec),len(self.labels)),dtype=np.int)
+		prev_state_v  = prev_state.reshape((K,1))
+		argmaxes      = np.zeros((N,K),dtype=np.int)
 		if debug:
 			print "T=0"
 			print prev_state
 			print
-		for i in range(1,len(x_vec)):
+		for i in range(1,N):
 			curr_state  = prev_state_v + log_potential[i]
 			argmaxes[i] = np.nanargmax(curr_state,axis=0)
-			prev_state[:]  = curr_state[argmaxes[i],range(len(self.labels))]
+			prev_state[:]  = curr_state[argmaxes[i],range(K)]
 			if debug:
 				print
 				print "T=%d"%i
@@ -168,16 +172,13 @@ class CRF:
 		prev_label = np.argmax(curr_state)
 		if debug: print prev_label
 		result = []
-		for i in reversed(range(len(x_vec))):
+		for i in reversed(range(N)):
 			if debug:print result
-			result.append(self.labels[prev_label])
+			result.append(prev_label)
 			prev_label = argmaxes[i,prev_label]
 		result.reverse()
 		return result
-
-	def _predict(self,x_vec):
-		all_features = self.all_features(x_vec)
-		
+	
 if __name__ == "__main__":
 	labels = ['A','B','C']
 	obsrvs = ['a','b','c','d','e','f']

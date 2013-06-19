@@ -49,16 +49,17 @@ if __name__ == "__main__":
 	print "Minimizing..."
 	def print_value(theta):
 		print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
-
-	#val = optimize.fmin_l_bfgs_b(l, crf.theta)
-	#print val
-	#theta,_,_  = val
+	val = optimize.fmin_l_bfgs_b(l, crf.theta,callback=print_value)
+	print val
+	theta,_,_  = val
+	"""
 	theta = crf.theta
 	for _ in range(10000):
 		value, gradient = l(theta)
 		print value
 		theta = theta - 0.1*gradient
 	crf.theta = theta
+	"""
 	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,crf.theta)
 	print
 	print
