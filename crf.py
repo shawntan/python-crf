@@ -232,7 +232,7 @@ if __name__ == "__main__":
 		value, gradient = l(theta)
 		print value
 		theta = theta - 0.01*gradient
-	crf.theta = theta
+	crf.theta = -theta
 	print theta
 	print "Minimized...."
 	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,crf.theta)

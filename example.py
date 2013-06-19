@@ -58,11 +58,11 @@ if __name__ == "__main__":
 		value, gradient = l(theta)
 		print value
 		theta = theta - 0.1*gradient
-	crf.theta = theta
 	"""
-	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,crf.theta)
+	crf.theta = theta
+	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
 	print
-	print
+	print "Latest:"
 	for x_vec in word_data[-5:]:
 		print x_vec
 		print crf.predict(x_vec)
