@@ -134,7 +134,7 @@ class CRF:
 		"""
 		all_features  = self.all_features(x_vec)
 		log_potential = np.dot(all_features,self.theta)
-		return [ self.labels[i] for i in self.slow_predict(log_potential,len(x_vec),len(self.labels)) ]
+		return [ self.labels[i] for i in self.log_predict(log_potential,len(x_vec),len(self.labels)) ]
 	
 	def slow_predict(self,log_potential,N,K,debug=False):
 		"""

@@ -1,12 +1,13 @@
 from crf import *
 from collections import defaultdict
 import re
+import sys
 word_data = []
 label_data = []
 all_labels = set()
 word_sets = defaultdict(set)
 obsrvs = set()
-for line in open('sample.txt'):
+for line in open(sys.argv[1]):
 	words,labels = [],[]
 	for token in line.strip().split():
 		word,label= token.split('/')
