@@ -4,7 +4,7 @@ TODO:
 	x implement regularisation
 	- implement viterbi
 """
-
+import marshal
 import numpy as np
 from scipy import misc,optimize
 
@@ -17,10 +17,18 @@ def log_dot_mv(logM,logb):
 	return misc.logsumexp(logM+logb.reshape((1,)+logb.shape),axis=1)
 
 class CRF:
-	def __init__(self,feature_functions,labels,sigma=100):
+	def __init__(self,feature_functions,labels,sigma=10,transition_feature=True):
 		self.ft_fun = feature_functions
-		self.theta  = np.random.randn(len(self.ft_fun))
+		
 		self.labels = [START] + labels + [ END ]
+		if transition_feature:
+			self.ft_fun = self.ft_fun + [
+				lambda yp,y,x_v,i,_yp=_yp,_y=_y: 1 if yp==_yp and y==_y else 0
+					for _yp in self.labels[:-1]
+					for _y  in self.labels[1:]
+			]
+		self.theta  = np.random.randn(len(self.ft_fun))
+
 		self.label_id  = { l:i for i,l in enumerate(self.labels) }
 		v = sigma ** 2
 		v2 = v * 2
@@ -63,10 +71,12 @@ class CRF:
 		return (betas,beta)
 
 	def create_vector_list(self,x_vecs,y_vecs):
+		print len(x_vecs)
 		observations = [ self.all_features(x_vec) for x_vec in x_vecs ]
 		labels = len(y_vecs)*[None]
 	
 		for i in range(len(y_vecs)):
+			assert(len(y_vecs[i]) == len(x_vecs[i]))
 			y_vecs[i].insert(0,START)
 			y_vecs[i].append(END)
 			labels[i] = np.array([ self.label_id[y] for y in y_vecs[i] ],copy=False,dtype=np.int)
@@ -199,6 +209,7 @@ class CRF:
 			prev_label = argmaxes[i,prev_label]
 		result.reverse()
 		return result
+
 	def train(self,x_vecs,y_vecs,debug=False):
 		vectorised_x_vecs,vectorised_y_vecs = self.create_vector_list(x_vecs,y_vecs)
 		l = lambda theta: self.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
@@ -207,4 +218,5 @@ class CRF:
 			print val
 		self.theta,_,_  = val
 		return self.theta
+
 
