@@ -144,7 +144,7 @@ class CRF:
 		"""
 		all_features  = self.all_features(x_vec)
 		log_potential = np.dot(all_features,self.theta)
-		return [ self.labels[i] for i in self.log_predict(log_potential,len(x_vec),len(self.labels)) ]
+		return [ self.labels[i] for i in self.slow_predict(log_potential,len(x_vec),len(self.labels)) ]
 	
 	def slow_predict(self,log_potential,N,K,debug=False):
 		"""
@@ -214,8 +214,7 @@ class CRF:
 		vectorised_x_vecs,vectorised_y_vecs = self.create_vector_list(x_vecs,y_vecs)
 		l = lambda theta: self.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
 		val = optimize.fmin_l_bfgs_b(l,self.theta)
-		if debug:
-			print val
+		if debug: print val
 		self.theta,_,_  = val
 		return self.theta
 
