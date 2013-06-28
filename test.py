@@ -109,7 +109,21 @@ class TestCRF(unittest.TestCase):
 		self.matrix = 0.001 + np.random.poisson(lam=1.5, size=(3,3)).astype(np.float)
 		self.vector = 0.001 + np.random.poisson(lam=1.5, size=(3,)).astype(np.float)
 		self.M = 0.001 + np.random.poisson(lam=1.5, size=(10,3,3)).astype(np.float)
-		self.crf = crf.CRF([],[])
+		labels = ['A','B','C']
+		obsrvs = ['a','b','c','d','e','f']
+		lbls   = [crf.START] + labels +  [crf.END]
+		
+		transition_functions = [
+				lambda yp,y,x_v,i,_yp=_yp,_y=_y: 1 if yp==_yp and y==_y else 0
+					for _yp in lbls[:-1]
+					for _y  in lbls[1:]]
+		observation_functions = [
+				lambda yp,y,x_v,i,_y=_y,_x=_x: 1 if i < len(x_v) and y==_y and x_v[i]==_x else 0
+					for _y in labels
+					for _x in obsrvs]
+		self.crf = crf.CRF( labels = labels,
+						feature_functions = transition_functions + observation_functions )
+
 
 	def test_log_dot_mv(self):
 		self.assertTrue(
@@ -138,14 +152,17 @@ class TestCRF(unittest.TestCase):
 		self.assertTrue((res == res_true).all())
 
 	def test_predict(self):
-		label_pred = self.crf.log_predict(self.M,self.M.shape[0],self.M.shape[1])
+		label_pred = self.crf.slow_predict(self.M,self.M.shape[0],self.M.shape[1])
 		label_act  = argmax(self.M)
-		print label_pred
-		print label_act
 		self.assertTrue(label_pred == label_act)
 
+	def test_integrated(self):
+		x_vec = ["a","b","c","d","e","f"]
+		y_vec = ["A","B","C","A","B","C"]
+		self.crf.train([x_vec],[y_vec])
+		l = lambda theta: crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
+		self.assertTrue(self.crf.predict(x_vec)==y_vec[1:-1])
 
 if __name__ == '__main__':
-	for i in range(10):
-		unittest.main()
+	unittest.main()
 

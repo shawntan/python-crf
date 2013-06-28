@@ -4,7 +4,7 @@ TODO:
 	x implement regularisation
 	- implement viterbi
 """
-
+import marshal
 import numpy as np
 from scipy import misc,optimize
 
@@ -17,10 +17,18 @@ def log_dot_mv(logM,logb):
 	return misc.logsumexp(logM+logb.reshape((1,)+logb.shape),axis=1)
 
 class CRF:
-	def __init__(self,feature_functions,labels,sigma=100):
+	def __init__(self,feature_functions,labels,sigma=10,transition_feature=True):
 		self.ft_fun = feature_functions
-		self.theta  = np.random.randn(len(self.ft_fun))
+		
 		self.labels = [START] + labels + [ END ]
+		if transition_feature:
+			self.ft_fun = self.ft_fun + [
+				lambda yp,y,x_v,i,_yp=_yp,_y=_y: 1 if yp==_yp and y==_y else 0
+					for _yp in self.labels[:-1]
+					for _y  in self.labels[1:]
+			]
+		self.theta  = np.random.randn(len(self.ft_fun))
+
 		self.label_id  = { l:i for i,l in enumerate(self.labels) }
 		v = sigma ** 2
 		v2 = v * 2
@@ -63,10 +71,12 @@ class CRF:
 		return (betas,beta)
 
 	def create_vector_list(self,x_vecs,y_vecs):
+		print len(x_vecs)
 		observations = [ self.all_features(x_vec) for x_vec in x_vecs ]
 		labels = len(y_vecs)*[None]
 	
 		for i in range(len(y_vecs)):
+			assert(len(y_vecs[i]) == len(x_vecs[i]))
 			y_vecs[i].insert(0,START)
 			y_vecs[i].append(END)
 			labels[i] = np.array([ self.label_id[y] for y in y_vecs[i] ],copy=False,dtype=np.int)
@@ -123,11 +133,7 @@ class CRF:
 		return (
 			- ( likelihood - self.regulariser(theta)), 
 			- ( derivative - self.regulariser_deriv(theta))
-			)
-	def fun(self,i,yp,y,k):
-		#print (i,yp,y,k)
-		fun = self.ft_fun[k]
-		return fun(self.labels[yp],self.labels[y],x_vec,i)
+		)
 	
 	def predict(self,x_vec, debug=False):
 		# small overhead, no copying is done
@@ -138,9 +144,9 @@ class CRF:
 		"""
 		all_features  = self.all_features(x_vec)
 		log_potential = np.dot(all_features,self.theta)
-		return [ self.labels[i] for i in self._predict(log_potential,len(x_vec),len(self.labels)) ]
+		return [ self.labels[i] for i in self.slow_predict(log_potential,len(x_vec),len(self.labels)) ]
 	
-	def _predict(self,log_potential,N,K,debug=False):
+	def slow_predict(self,log_potential,N,K,debug=False):
 		"""
 		Find the most likely assignment to labels given parameters using the
 		Viterbi algorithm.
@@ -166,8 +172,6 @@ class CRF:
 			y = B[t, y]
 		trace.reverse()
 		return trace
-
-
 
 	def log_predict(self,log_potential,N,K,debug=False):
 		if debug:
@@ -205,36 +209,13 @@ class CRF:
 			prev_label = argmaxes[i,prev_label]
 		result.reverse()
 		return result
-	
-if __name__ == "__main__":
-	labels = ['A','B','C']
-	obsrvs = ['a','b','c','d','e','f']
-	lbls   = [START] + labels +  [END]
-	transition_functions = [
-			lambda yp,y,x_v,i,_yp=_yp,_y=_y: 1 if yp==_yp and y==_y else 0
-				for _yp in lbls[:-1]
-				for _y  in lbls[1:]]
-	observation_functions = [
-			lambda yp,y,x_v,i,_y=_y,_x=_x: 1 if i < len(x_v) and y==_y and x_v[i]==_x else 0
-				for _y in labels
-				for _x in obsrvs]
-	crf = CRF( labels = labels,
-			   feature_functions = transition_functions + observation_functions )
-	x_vec = ["a","b","c","d","e","f"]
-	y_vec = ["A","B","C","A","B","C"]
 
-	vectorised_x_vecs,vectorised_y_vecs = crf.create_vector_list([x_vec],[y_vec])
-	l = lambda theta: crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
-	#crf.theta = optimize.fmin_bfgs(l, crf.theta, maxiter=100)
-	#theta,_,_ = optimize.fmin_l_bfgs_b(l, crf.theta)
-	theta = crf.theta
-	for _ in range(10000):
-		value, gradient = l(theta)
-		print value
-		theta = theta - 0.01*gradient
-	crf.theta = -theta
-	print theta
-	print "Minimized...."
-	print crf.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,crf.theta)
-	print
-	print crf.predict(x_vec)
+	def train(self,x_vecs,y_vecs,debug=False):
+		vectorised_x_vecs,vectorised_y_vecs = self.create_vector_list(x_vecs,y_vecs)
+		l = lambda theta: self.neg_likelihood_and_deriv(vectorised_x_vecs,vectorised_y_vecs,theta)
+		val = optimize.fmin_l_bfgs_b(l,self.theta)
+		if debug: print val
+		self.theta,_,_  = val
+		return self.theta
+
+
