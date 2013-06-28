@@ -1,7 +1,7 @@
 from crf import CRF
 import features
 import re, sys
-import cPickle as pickle
+import cloudpickle
 training_file = sys.argv[1]
 
 if __name__ == '__main__':
@@ -26,7 +26,7 @@ if __name__ == '__main__':
 								#	for _x in obsrvs
 								#])
 	crf.train(word_data[:-5],label_data[:-5])
-	#pickle.dump(crf,open(sys.argv[2],'wb'))
+	cloudpickle.dump(crf,open(sys.argv[2],'wb'))
 	for i in range(-5,0):
 		print word_data[i]
 		print crf.predict(word_data[i])
