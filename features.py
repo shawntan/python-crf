@@ -2,11 +2,6 @@ import re
 from collections import defaultdict
 
 alphas = re.compile('^[a-zA-Z]+$')
-def listify(gen):
-	"Convert a generator into a function which returns a list"
-	def patched(*args, **kwargs):
-		return list(gen(*args, **kwargs))
-	return patched
 
 def fit_dataset(filename):
 	labels = set()
@@ -38,25 +33,46 @@ def fit_dataset(filename):
 			print line
 	return (labels,obsrvs,word_sets,sents_words,sents_labels)
 
-@listify
-def set_membership(labels,*word_sets):
-	for lbl in labels:
-		for ws in word_sets:
-			def fun(yp,y,x_v,i,lbl=lbl,s=ws):
-				if i < len(x_v) and y==lbl and (x_v[i].lower() in s):
-					#print lbl, ws,x_v[i]
-					return 1
-				else: return 0
-			yield fun
+class FeatureSet:
+	@classmethod
+	def functions(cls,lbls,*arguments):
+		def gen():
+			for lbl in lbls:
+				for arg in arguments:
+					print arg
+					if isinstance(arg,tuple):
+						yield cls(lbl,*arg)
+					else:
+						yield cls(lbl,arg)
+		return list(gen())
+	def __repr__(self):
+		return "%s(%s)"%(self.__class__.__name__,self.__dict__)
 
-@listify
-def match_regex(labels,*regexps):
-	for regexp in regexps:
-		p = re.compile(regexp)
-		for lbl in labels:
-			def fun(yp,y,x_v,i,lbl=lbl,p=p):
-				if i < len(x_v) and y==lbl and p.match(x_v[i]):
-					return 1
-				else: return 0
-			yield fun
+class Membership(FeatureSet):
+	def __init__(self,label,word_set):
+		self.label = label
+		self.word_set = word_set
+	def __call__(self,yp,y,x_v,i):
+		if i < len(x_v) and y == self.label and (x_v[i].lower() in self.word_set):
+			return 1
+		else:
+			return 0
+class FileMembership(Membership):
+	def __init__(self,label,filename):
+		self.label = label
+		self.word_set = set([ line.strip().lower() for line in open(filename,'r') ])
 
+class MatchRegex(FeatureSet):
+	def __init__(self,label,regex):
+		self.label = label
+		self.regex = re.compile(regex)
+	def __call__(self,yp,y,x_v,i):
+		if i < len(x_v) and y==self.label and self.regex.match(x_v[i]):
+			return 1
+		else:
+			return 0
+
+if __name__ == "__main__":
+	val = Membership.functions(['HI','HO'],set(['hi']),set(['ho'])) + MatchRegex.functions(['HI','HO'],'\w+','\d+')
+	print val[0]('HO','HO',['hi'],0)
+	print val[0]('HO','HI',['hi'],0)

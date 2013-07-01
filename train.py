@@ -1,15 +1,15 @@
 from crf import CRF
-import features
+from features import *
 import re, sys
-import cloudpickle
+import pickle
 training_file = sys.argv[1]
 
 if __name__ == '__main__':
-	labels,obsrvs,word_sets,word_data,label_data = features.fit_dataset(training_file)
+	labels,obsrvs,word_sets,word_data,label_data = fit_dataset(training_file)
 	crf = CRF(
 			labels=list(labels),
-			feature_functions = features.set_membership(labels,*word_sets.values()) +
-								features.match_regex(labels,
+			feature_functions = Membership.functions(labels,*word_sets.values()) +
+								MatchRegex.functions(labels,
 									'^[^0-9a-zA-Z\-]+$',
 									'^[^0-9\-]+$',
 									'^[A-Z]+$',
@@ -26,7 +26,7 @@ if __name__ == '__main__':
 								#	for _x in obsrvs
 								#])
 	crf.train(word_data[:-5],label_data[:-5])
-	cloudpickle.dump(crf,open(sys.argv[2],'wb'))
+	pickle.dump(crf,open(sys.argv[2],'wb'))
 	for i in range(-5,0):
 		print word_data[i]
 		print crf.predict(word_data[i])
