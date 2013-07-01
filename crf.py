@@ -22,11 +22,7 @@ class CRF:
 		
 		self.labels = [START] + labels + [ END ]
 		if transition_feature:
-			self.ft_fun = self.ft_fun + [
-				lambda yp,y,x_v,i,_yp=_yp,_y=_y: 1 if yp==_yp and y==_y else 0
-					for _yp in self.labels[:-1]
-					for _y  in self.labels[1:]
-			]
+			self.ft_fun = self.ft_fun + Transitions.functions(self.labels[1:],self.labels[:-1])
 		self.theta  = np.random.randn(len(self.ft_fun))
 
 		self.label_id  = { l:i for i,l in enumerate(self.labels) }
@@ -217,5 +213,33 @@ class CRF:
 		if debug: print val
 		self.theta,_,_  = val
 		return self.theta
+
+
+class FeatureSet:
+	@classmethod
+	def functions(cls,lbls,*arguments):
+		def gen():
+			for lbl in lbls:
+				for arg in arguments:
+					if isinstance(arg,tuple):
+						yield cls(lbl,*arg)
+					else:
+						yield cls(lbl,arg)
+		return list(gen())
+	def __repr__(self):
+		return "%s(%s)"%(self.__class__.__name__,self.__dict__)
+
+class Transitions(FeatureSet):
+	def __init__(self,curr_lbl,prev_lbl):
+		self.prev_label = prev_lbl
+		self.label = curr_lbl
+
+	def __call__(self,yp,y,x_v,i):
+		if yp==self.prev_label and y==self.label:
+			return 1
+		else:
+			return 0
+
+
 
 

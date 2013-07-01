@@ -1,6 +1,6 @@
 import re
 from collections import defaultdict
-
+from crf import FeatureSet
 alphas = re.compile('^[a-zA-Z]+$')
 
 def fit_dataset(filename):
@@ -32,21 +32,6 @@ def fit_dataset(filename):
 		except Exception:
 			print line
 	return (labels,obsrvs,word_sets,sents_words,sents_labels)
-
-class FeatureSet:
-	@classmethod
-	def functions(cls,lbls,*arguments):
-		def gen():
-			for lbl in lbls:
-				for arg in arguments:
-					print arg
-					if isinstance(arg,tuple):
-						yield cls(lbl,*arg)
-					else:
-						yield cls(lbl,arg)
-		return list(gen())
-	def __repr__(self):
-		return "%s(%s)"%(self.__class__.__name__,self.__dict__)
 
 class Membership(FeatureSet):
 	def __init__(self,label,word_set):
