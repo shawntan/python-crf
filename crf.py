@@ -218,7 +218,7 @@ class CRF:
 		return self.theta
 
 
-class FeatureSet:
+class FeatureSet(object):
 	@classmethod
 	def functions(cls,lbls,*arguments):
 		def gen():
