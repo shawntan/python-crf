@@ -43,9 +43,13 @@ class Membership(FeatureSet):
 		else:
 			return 0
 class FileMembership(Membership):
-	def __init__(self,label,filename):
-		self.label = label
-		self.word_set = set([ line.strip().lower() for line in open(filename,'r') ])
+	@classmethod
+	def functions(cls,lbls,*filenames):
+		sets = [
+			set([ line.strip().lower() for line in open(filename,'r') ])
+				for filename in filenames
+		]
+		return super(FileMembership, cls).functions(lbls,*sets)
 
 class MatchRegex(FeatureSet):
 	def __init__(self,label,regex):

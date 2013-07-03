@@ -243,6 +243,3 @@ class Transitions(FeatureSet):
 		else:
 			return 0
 
-
-
-
