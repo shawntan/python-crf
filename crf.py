@@ -26,10 +26,13 @@ class CRF:
 		self.theta  = np.random.randn(len(self.ft_fun))
 
 		self.label_id  = { l:i for i,l in enumerate(self.labels) }
-		v = sigma ** 2
-		v2 = v * 2
-		self.regulariser = lambda w: np.sum(w ** 2) / v2
-		self.regulariser_deriv = lambda w:np.sum(w) / v
+		self.v = sigma ** 2
+		self.v2 = self.v * 2
+
+	def regulariser(self,w):
+		return np.sum(w ** 2) /self.v2
+	def regulariser_deriv(self,w):
+		return np.sum(w) / self.v
 
 	def all_features(self,x_vec):
 		"""
